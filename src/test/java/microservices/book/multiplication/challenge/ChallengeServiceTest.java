@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 
 import java.util.List;
 import java.util.Optional;
+import microservices.book.multiplication.serviceclients.GamificationServiceClient;
 import microservices.book.multiplication.user.User;
 import microservices.book.multiplication.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,22 +29,35 @@ public class ChallengeServiceTest {
   private UserRepository userRepository;
   @Mock
   private ChallengeAttemptRepository challengeAttemptRepository;
+  @Mock
+  private GamificationServiceClient gamificationServiceClient;
 
   @BeforeEach
   public void setUp() {
     challengeService = new ChallengeServiceImpl(
         userRepository,
-        challengeAttemptRepository
+        challengeAttemptRepository,
+        gamificationServiceClient
     );
   }
 
   @Test
   void checkCorrectAttemptTest() {
     // given
+    User user = new User("bruce_lee");
+    given(userRepository.save(any()))
+        .will(returnsFirstArg());
     given(challengeAttemptRepository.save(any()))
         .will(returnsFirstArg());
     ChallengeAttemptDTO challengeAttemptDTO =
         new ChallengeAttemptDTO(20, 30, "bruce_lee", 600);
+    ChallengeAttempt resultAttempt = new ChallengeAttempt(
+        null,
+        user,
+        20,
+        30,
+        600,
+        true);
 
     // when
     ChallengeAttempt challengeAttempt =
@@ -51,8 +65,9 @@ public class ChallengeServiceTest {
 
     // then
     then(challengeAttempt.isCorrect()).isTrue();
-    verify(userRepository).save(new User("bruce_lee"));
+    verify(userRepository).save(user);
     verify(challengeAttemptRepository).save(challengeAttempt);
+    verify(gamificationServiceClient).sendAttempt(resultAttempt);
   }
 
   @Test
